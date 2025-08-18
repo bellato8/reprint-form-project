@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ใบคำร้อง RE-PRINT บัตรจอดรถ</title>
+    </head>
+<body>
+
+    <header>
+        <h1>ใบคำร้องขอ RE-PRINT บัตรจอดรถ</h1>
+        <p>ศูนย์การค้าอิมพีเรียลเวิลด์ สำโรง</p>
+    </header>
+
+    <main>
+        <form id="reprintForm">
+            
+            <fieldset>
+                <legend>ข้อมูลส่วนตัวผู้ยื่นคำร้อง</legend>
+                <p>
+                    <label for="fullName">ชื่อ-นามสกุล:</label><br>
+                    <input type="text" id="fullName" name="FullName" required>
+                </p>
+                <p>
+                    <label for="phone">หมายเลขติดต่อ:</label><br>
+                    <input type="tel" id="phone" name="Phone" required pattern="[0-9]{9,15}">
+                </p>
+                <p>
+                    <label for="age">อายุ:</label><br>
+                    <input type="number" id="age" name="Age" min="15" max="120"> ปี
+                </p>
+                 <p>
+                    <label for="applicantRole">มีฐานะเป็น:</label><br>
+                    <select id="applicantRole" name="ApplicantRole" required>
+                        <option value="">-- กรุณาเลือก --</option>
+                        <option value="ลูกบ้าน">ลูกบ้าน</option>
+                        <option value="ร้านค้า">ร้านค้า</option>
+                        <option value="พนักงานบริษัท">พนักงานบริษัท</option>
+                        <option value="อื่นๆ">อื่นๆ</option>
+                    </select>
+                </p>
+            </fieldset>
+
+            <fieldset>
+                <legend>รายละเอียดคำร้อง</legend>
+                <p>
+                    <label for="reasonType">เนื่องจาก:</label><br>
+                    <select id="reasonType" name="ReasonType" required>
+                        <option value="">-- กรุณาเลือก --</option>
+                        <option value="สูญหาย">บัตรจอดรถสูญหาย</option>
+                        <option value="ชำรุด">บัตรจอดรถชำรุด</option>
+                        <option value="อื่นๆ">อื่นๆ (โปรดระบุ)</option>
+                    </select>
+                </p>
+                <p>
+                    <label for="reasonOther">ระบุเหตุผลอื่นๆ (ถ้ามี):</label><br>
+                    <textarea id="reasonOther" name="ReasonOther" rows="3"></textarea>
+                </p>
+            </fieldset>
+
+            <fieldset>
+                <legend>ข้อมูลยานพาหนะ</legend>
+                <p>
+                    <label for="licensePlate">ทะเบียนรถ:</label><br>
+                    <input type="text" id="licensePlate" name="LicensePlate" required>
+                </p>
+                <p>
+                    <label for="vehicleType">ประเภทยานพาหนะ:</label><br>
+                    <select id="vehicleType" name="VehicleType" required>
+                        <option value="">-- กรุณาเลือก --</option>
+                        <option value="รถยนต์">รถยนต์</option>
+                        <option value="รถจักรยานยนต์">รถจักรยานยนต์</option>
+                    </select>
+                </p>
+                <p>
+                    <label for="brand">ยี่ห้อ:</label><br>
+                    <input type="text" id="brand" name="Brand">
+                </p>
+                <p>
+                    <label for="color">สี:</label><br>
+                    <input type="text" id="color" name="Color">
+                </p>
+            </fieldset>
+
+            <fieldset>
+                <legend>หลักฐานประกอบคำร้อง</legend>
+                <p>
+                    <label for="idCardImage">อัปโหลดภาพถ่ายบัตรประชาชน/ใบขับขี่:</label><br>
+                    <input type="file" id="idCardImage" name="file" accept="image/*" required>
+                </p>
+                <div>
+                    <img id="imagePreview" src="" alt="ตัวอย่างรูปภาพ" style="display:none; max-width: 250px; margin-top: 10px;">
+                </div>
+            </fieldset>
+            
+            <fieldset>
+                <legend>การยินยอม</legend>
+                <p>
+                    <input type="checkbox" id="consent" name="ConsentAgreed" required>
+                    <label for="consent">ข้าพเจ้ายินยอมให้ประทับตราบนรูปภาพบัตรเพื่อใช้สำหรับดำเนินการเรื่อง RE-PRINT บัตรจอดรถเท่านั้น</label>
+                </p>
+            </fieldset>
+
+            <button type="submit">ส่งคำร้อง</button>
+        </form>
+    </main>
+    
+    </body>
+</html>
