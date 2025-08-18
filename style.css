@@ -102,15 +102,18 @@ canvas {
     border-radius: 4px;
 }
 
-/* --- NEW Luxury Grid Desktop Styling --- */
-@media (min-width: 992px) { /* ทำให้ Grid แสดงผลบนจอที่กว้างขึ้น */
+/* --- NEW Luxury Grid Desktop Styling with Professional Background --- */
+@media (min-width: 992px) {
     @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+Thai:wght@400;700&family=Poppins:wght@300;400&display=swap');
 
     body {
         font-family: 'Poppins', sans-serif;
-        background-color: #121212;
-        background-image: radial-gradient(circle at top right, rgba(121, 68, 154, 0.2), transparent 40%),
-                          radial-gradient(circle at bottom left, rgba(45, 108, 229, 0.2), transparent 50%);
+        /* --- NEW PROFESSIONAL BACKGROUND --- */
+        background-color: #1a1a1a; /* สีพื้นหลังหลักเป็นเทาเข้มเกือบดำ */
+        background-image: 
+            radial-gradient(at 0% 0%, hsla(253, 16%, 7%, 1) 0, transparent 50%), 
+            radial-gradient(at 80% 0%, hsla(28, 100%, 74%, 0.15) 0, transparent 50%), 
+            radial-gradient(at 0% 100%, hsla(339, 49%, 30%, 0.15) 0, transparent 50%);
         color: #e0e0e0;
         background-attachment: fixed;
     }
@@ -123,7 +126,7 @@ canvas {
 
     form {
         width: 90%;
-        max-width: 900px; /* ขยายฟอร์มให้กว้างขึ้นเพื่อรองรับ Grid */
+        max-width: 900px;
         margin: 60px auto;
         border: 1px solid rgba(255, 255, 255, 0.1);
         box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
@@ -134,33 +137,28 @@ canvas {
         padding: 50px;
     }
 
-    /* --- THE GRID LAYOUT --- */
     fieldset {
         display: grid;
-        grid-template-columns: 1fr 1fr; /* สร้าง 2 คอลัมน์เท่าๆ กัน */
-        gap: 15px 30px; /* ระยะห่างระหว่าง แถว และ คอลัมน์ */
+        grid-template-columns: 1fr 1fr;
+        gap: 15px 30px;
         align-items: start;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         padding-bottom: 40px;
     }
 
-    /* --- จัดการให้ Element บางตัวกินพื้นที่เต็มความกว้าง --- */
     fieldset > legend,
-    fieldset > p:has(textarea), /* ช่องเหตุผลอื่นๆ */
-    fieldset > div, /* พื้นที่แสดงรูปภาพ */
-    fieldset > p:last-of-type /* ช่องยินยอม */
-    {
-       grid-column: 1 / -1; /* ทำให้ Element นี้ยาวเต็ม 2 คอลัมน์ */
+    fieldset > p:has(textarea),
+    fieldset > div,
+    fieldset > p:last-of-type {
+       grid-column: 1 / -1;
     }
-
-    /* --- จบส่วน Grid Layout --- */
 
     input, select, textarea {
         background: rgba(0, 0, 0, 0.3);
         border: 1px solid rgba(255, 255, 255, 0.2);
         color: #ffffff;
         font-family: 'Poppins', sans-serif;
-        margin-bottom: 0; /* เอา margin-bottom เดิมออก */
+        margin-bottom: 0;
     }
 
     input:focus, select:focus, textarea:focus {
@@ -169,7 +167,7 @@ canvas {
     }
 
     button[type="submit"] {
-        grid-column: 1 / -1; /* ปุ่มส่งอยู่ใต้ fieldset สุดท้ายและยาวเต็ม */
+        grid-column: 1 / -1;
         background: linear-gradient(45deg, #c0a07b, #d4af8c);
         color: #121212;
         font-family: 'Noto Serif Thai', serif;
