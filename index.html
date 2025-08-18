@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="th">
-<head> <link rel="stylesheet" href="style.css">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ใบคำร้อง RE-PRINT บัตรจอดรถ</title>
-    </head>
+    <link rel="stylesheet" href="style.css">
+</head>
 <body>
 
     <header>
@@ -29,37 +30,50 @@
                     <label for="age">อายุ:</label><br>
                     <input type="number" id="age" name="Age" min="15" max="120"> ปี
                 </p>
+                <p>
+                    <label for="province">จังหวัด:</label><br>
+                    <select id="province" name="Province" required>
+                        <option value="">-- กรุณาเลือกจังหวัด --</option>
+                    </select>
+                </p>
+                <p>
+                    <label for="district">เขต/อำเภอ:</label><br>
+                    <select id="district" name="District" required>
+                        <option value="">-- กรุณาเลือกอำเภอ --</option>
+                    </select>
+                </p>
+                <p>
+                    <label for="subdistrict">แขวง/ตำบล:</label><br>
+                    <select id="subdistrict" name="Subdistrict" required>
+                        <option value="">-- กรุณาเลือกตำบล --</option>
+                    </select>
+                </p>
                  <p>
                     <label for="applicantRole">มีฐานะเป็น:</label><br>
                     <select id="applicantRole" name="ApplicantRole" required>
                         <option value="">-- กรุณาเลือก --</option>
-                        <option value="ลูกค้า">ลูกค้า</option>
-                        <option value="ร้านค้า">ร้านค้า</option>
-                        <option value="พนักงานบริษัท">พนักงานบริษัท</option>
+                        <option value="ผู้ครอบครองบัตร">ผู้ครอบครองบัตร</option>
+                        <option value="เจ้าของรถ">เจ้าของรถ</option>
+                        <option value="ผู้ขับขี่">ผู้ขับขี่</option>
                         <option value="อื่นๆ">อื่นๆ</option>
                     </select>
                 </p>
             </fieldset>
 
             <fieldset>
-                <legend>รายละเอียดคำร้อง</legend>
-                <p>
-                    <label for="reasonType">เนื่องจาก:</label><br>
-                    <select id="reasonType" name="ReasonType" required>
+                <legend>รายละเอียดคำร้องและยานพาหนะ</legend>
+                 <p>
+                    <label for="gate">เข้ามาทางประตู:</label><br>
+                    <select id="gate" name="Gate" required>
                         <option value="">-- กรุณาเลือก --</option>
-                        <option value="สูญหาย">บัตรจอดรถสูญหาย</option>
-                        <option value="ชำรุด">บัตรจอดรถชำรุด</option>
-                        <option value="อื่นๆ">อื่นๆ (โปรดระบุ)</option>
+                        <option value="C1">C1</option>
+                        <option value="C2">C2</option>
+                        <option value="MI1">MI1</option>
+                        <option value="MI2">MI2</option>
+                        <option value="MI3">MI3</option>
+                        <option value="MI4">MI4</option>
                     </select>
                 </p>
-                <p>
-                    <label for="reasonOther">ระบุเหตุผลอื่นๆ (ถ้ามี):</label><br>
-                    <textarea id="reasonOther" name="ReasonOther" rows="3"></textarea>
-                </p>
-            </fieldset>
-
-            <fieldset>
-                <legend>ข้อมูลยานพาหนะ</legend>
                 <p>
                     <label for="licensePlate">ทะเบียนรถ:</label><br>
                     <input type="text" id="licensePlate" name="LicensePlate" required>
@@ -77,8 +91,25 @@
                     <input type="text" id="brand" name="Brand">
                 </p>
                 <p>
+                    <label for="model">รุ่น:</label><br>
+                    <input type="text" id="model" name="Model">
+                </p>
+                <p>
                     <label for="color">สี:</label><br>
                     <input type="text" id="color" name="Color">
+                </p>
+                 <p>
+                    <label for="reasonType">เนื่องจาก:</label><br>
+                    <select id="reasonType" name="ReasonType" required>
+                        <option value="">-- กรุณาเลือก --</option>
+                        <option value="สูญหาย">บัตรจอดรถสูญหาย</option>
+                        <option value="ชำรุด">บัตรจอดรถชำรุด</option>
+                        <option value="อื่นๆ">อื่นๆ (โปรดระบุ)</option>
+                    </select>
+                </p>
+                <p>
+                    <label for="reasonOther">ระบุเหตุผลอื่นๆ (ถ้ามี):</label><br>
+                    <textarea id="reasonOther" name="ReasonOther" rows="3"></textarea>
                 </p>
             </fieldset>
 
@@ -86,10 +117,10 @@
                 <legend>หลักฐานประกอบคำร้อง</legend>
                 <p>
                     <label for="idCardImage">อัปโหลดภาพถ่ายบัตรประชาชน/ใบขับขี่:</label><br>
-                    <input type="file" id="idCardImage" name="file" accept="image/*" required>
+                    <input type="file" id="idCardImage" name="file" accept="image/*" capture="environment" required>
                 </p>
                 <div>
-                    <img id="imagePreview" src="" alt="ตัวอย่างรูปภาพ" style="display:none; max-width: 250px; margin-top: 10px;">
+                    <canvas id="imageCanvas" style="max-width: 100%; height: auto; margin-top: 10px;"></canvas>
                 </div>
             </fieldset>
             
@@ -105,5 +136,6 @@
         </form>
     </main>
     
-    </body>
+    <script src="client.js"></script>
+</body>
 </html>
