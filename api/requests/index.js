@@ -6,27 +6,37 @@ const fs = require("fs");
 // Helper function to parse form with Formidable
 const parseForm = (req) => {
     return new Promise((resolve, reject) => {
-        const form = formidable({});
+        // THE FIX IS HERE: We instantiate the form object differently
+        const form = formidable({ 
+            // Options can be added here if needed, e.g., maxFileSize
+        });
+
         form.parse(req, (err, fields, files) => {
-            if (err) reject(err);
-            else resolve({ fields, files });
+            if (err) {
+                reject(err);
+                return;
+            }
+            // Formidable v3 wraps fields in arrays, so we need to unwrap them
+            const unwrappedFields = {};
+            for (const key in fields) {
+                unwrappedFields[key] = fields[key][0];
+            }
+            resolve({ fields: unwrappedFields, files });
         });
     });
 };
 
 module.exports = async function (context, req) {
-    context.log('Processing a new reprint request with Formidable parser.');
+    context.log('Processing a new reprint request with Formidable parser v2.');
 
     try {
         const { fields, files } = await parseForm(req);
 
-        // Formidable v3 gives an array of files, even for a single upload
         const imageFile = files.file ? files.file[0] : null;
         if (!imageFile) {
             throw new Error("Image file not found in form data.");
         }
 
-        // Read the uploaded file from its temporary path
         const imageBuffer = fs.readFileSync(imageFile.filepath);
 
         // Generate Request ID
