@@ -6,25 +6,59 @@ document.addEventListener('DOMContentLoaded', () => {
     const submitButton = form.querySelector('button[type="submit"]');
     let processedFile = null;
 
-    // --- Cascading Dropdowns (Placeholder) ---
-    const locationData = { "สมุทรปราการ": { "เมืองสมุทรปราการ": ["ปากน้ำ", "สำโรงเหนือ"], "พระประแดง": ["ตลาด", "บางพึ่ง"] }, "กรุงเทพมหานคร": { "เขตพระนคร": ["พระบรมมหาราชวัง"], "เขตบางนา": ["บางนาเหนือ", "บางนาใต้"] } };
+    // --- NEW: Real Cascading Dropdowns ---
     const provinceSelect = document.getElementById('province');
     const districtSelect = document.getElementById('district');
     const subdistrictSelect = document.getElementById('subdistrict');
-    for (const province in locationData) { provinceSelect.add(new Option(province, province)); }
+
+    // Function to populate a select dropdown
+    const populateSelect = (selectElement, items) => {
+        selectElement.innerHTML = `<option value="">-- ${selectElement.id === 'province' ? 'กรุณาเลือกจังหวัด' : (selectElement.id === 'district' ? 'กรุณาเลือกอำเภอ' : 'กรุณาเลือกตำบล')} --</option>`;
+        items.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item;
+            option.textContent = item;
+            selectElement.appendChild(option);
+        });
+    };
+
+    // 1. Fetch and populate provinces on page load
+    fetch('/api/locations')
+        .then(response => response.json())
+        .then(provinces => populateSelect(provinceSelect, provinces));
+
+    // 2. Add event listener for province change
     provinceSelect.addEventListener('change', () => {
-        districtSelect.innerHTML = '<option value="">-- กรุณาเลือกอำเภอ --</option>';
+        const selectedProvince = provinceSelect.value;
+        districtSelect.innerHTML = '<option value="">-- กำลังโหลด... --</option>';
         subdistrictSelect.innerHTML = '<option value="">-- กรุณาเลือกตำบล --</option>';
-        if (provinceSelect.value && locationData[provinceSelect.value]) { for (const district in locationData[provinceSelect.value]) { districtSelect.add(new Option(district, district)); } }
-    });
-    districtSelect.addEventListener('change', () => {
-        subdistrictSelect.innerHTML = '<option value="">-- กรุณาเลือกตำบล --</option>';
-        const districts = locationData[provinceSelect.value];
-        if (districtSelect.value && districts && districts[districtSelect.value]) { districts[districtSelect.value].forEach(subdistrict => { subdistrictSelect.add(new Option(subdistrict, subdistrict)); }); }
+
+        if (selectedProvince) {
+            fetch(`/api/locations?province=${encodeURIComponent(selectedProvince)}`)
+                .then(response => response.json())
+                .then(districts => populateSelect(districtSelect, districts));
+        } else {
+             populateSelect(districtSelect, []);
+        }
     });
 
-    // --- Image Preview & Watermark with HEIC Conversion ---
+    // 3. Add event listener for district change
+    districtSelect.addEventListener('change', () => {
+        const selectedDistrict = districtSelect.value;
+        subdistrictSelect.innerHTML = '<option value="">-- กำลังโหลด... --</option>';
+
+        if (selectedDistrict) {
+             fetch(`/api/locations?district=${encodeURIComponent(selectedDistrict)}`)
+                .then(response => response.json())
+                .then(subdistricts => populateSelect(subdistrictSelect, subdistricts));
+        } else {
+            populateSelect(subdistrictSelect, []);
+        }
+    });
+
+    // --- Image Preview & Watermark ---
     fileInput.addEventListener('change', async (event) => {
+        // ... (โค้ดส่วนนี้เหมือนเดิมทุกประการ) ...
         let file = event.target.files[0];
         if (!file) { processedFile = null; return; }
         submitButton.disabled = true;
@@ -75,8 +109,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- Form Submission (NEW METHOD: JSON + Base64) ---
+    // --- Form Submission ---
     form.addEventListener('submit', async (event) => {
+        // ... (โค้ดส่วนนี้เหมือนเดิมทุกประการ) ...
         event.preventDefault();
         if (!processedFile) {
             alert('กรุณาอัปโหลดรูปภาพก่อนครับ');
@@ -84,27 +119,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         submitButton.disabled = true;
         submitButton.textContent = 'กำลังส่ง...';
-
-        // Convert file to Base64
         const reader = new FileReader();
         reader.readAsDataURL(processedFile);
         reader.onload = async () => {
             const base64Image = reader.result;
-
             const formDataObject = {};
             new FormData(form).forEach((value, key) => {
-                if (key !== 'file') { // Exclude the file input from form data
+                if (key !== 'file') {
                     formDataObject[key] = value;
                 }
             });
-
-            // Combine form data and base64 image into a single JSON object
-            const payload = {
-                ...formDataObject,
-                imageData: base64Image,
-                imageFileName: processedFile.name
-            };
-
+            const payload = { ...formDataObject, imageData: base64Image, imageFileName: processedFile.name };
             try {
                 const response = await fetch('/api/requests', {
                     method: 'POST',
