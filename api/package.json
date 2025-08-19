@@ -6,7 +6,7 @@
   "dependencies": {
     "@azure/storage-blob": "^12.17.0",
     "formidable": "^3.5.1",
-    "sharp": "^0.33.3",
+    "jimp": "^0.22.12",
     "tedious": "^18.2.0"
   }
 }

@@ -1,6 +1,9 @@
+// File: api/requests/index.js
+// Final version using Jimp for image processing.
+
 const { BlobServiceClient } = require("@azure/storage-blob");
 const formidable = require("formidable");
-const sharp = require("sharp");
+const Jimp = require("jimp");
 const fs = require("fs");
 const { Connection, Request, TYPES } = require("tedious");
 
@@ -28,7 +31,7 @@ const executeSql = (connection, request) => {
 };
 
 module.exports = async function (context, req) {
-    context.log('Processing a new reprint request with DB insert.');
+    context.log('Processing a new reprint request with Jimp processor.');
     let connection;
     try {
         const { fields, files } = await parseForm(req);
@@ -37,6 +40,7 @@ module.exports = async function (context, req) {
 
         const imageBuffer = fs.readFileSync(imageFile.filepath);
 
+        // Generate Request ID
         const now = new Date();
         const year = now.getFullYear() + 543;
         const month = (now.getMonth() + 1).toString().padStart(2, '0');
@@ -44,13 +48,26 @@ module.exports = async function (context, req) {
         const timestamp = Date.now().toString().slice(-4);
         const requestId = `R${year}${month}${day}-${timestamp}`;
 
+        // Watermark the image using Jimp
+        const image = await Jimp.read(imageBuffer);
+        const font = await Jimp.loadFont(Jimp.FONT_SANS_32_BLACK); // Using a built-in font
+
         const timeString = now.toTimeString().split(' ')[0].substring(0, 5);
         const dateString = `${day}/${month}/${year}`;
         const watermarkText = `ใช้สำหรับ RE-PRINT บัตรจอดรถเท่านั้น\nที่ศูนย์การค้าอิมพีเรียลเวิลด์ สำโรง\nวันที่ ${dateString} เวลา ${timeString} น.`;
-        const imageMetadata = await sharp(imageBuffer).metadata();
-        const textSvg = Buffer.from(`<svg width="${imageMetadata.width}" height="${imageMetadata.height}"><style>.title { fill: rgba(255, 0, 0, 0.4); font-size: ${Math.max(20, imageMetadata.width / 20)}px; font-weight: bold; font-family: Arial, sans-serif; text-anchor: middle; }</style><text x="50%" y="50%" class="title" transform="rotate(-20 ${imageMetadata.width / 2},${imageMetadata.height / 2})">${watermarkText.split('\n').map((line, i) => `<tspan x="50%" dy="${i === 0 ? 0 : '1.2em'}">${line}</tspan>`).join('')}</text></svg>`);
-        const watermarkedImageBuffer = await sharp(imageBuffer).composite([{ input: textSvg, tile: false }]).jpeg({ quality: 85 }).toBuffer();
 
+        const textOptions = {
+            text: watermarkText,
+            alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
+            alignmentY: Jimp.VERTICAL_ALIGN_MIDDLE
+        };
+
+        image.print(font, 0, 0, textOptions, image.bitmap.width, image.bitmap.height);
+        image.rotate(-20); // Rotate after printing for better effect
+
+        const watermarkedImageBuffer = await image.getBufferAsync(Jimp.MIME_JPEG);
+
+        // Upload to Azure Blob Storage
         const storageConnectionString = process.env.ReprintStorageConnectionString;
         if (!storageConnectionString) throw new Error("Azure Storage Connection String is not configured.");
         const blobServiceClient = BlobServiceClient.fromConnectionString(storageConnectionString);
@@ -59,24 +76,19 @@ module.exports = async function (context, req) {
         const blockBlobClient = containerClient.getBlockBlobClient(blobName);
         await blockBlobClient.upload(watermarkedImageBuffer, watermarkedImageBuffer.length, { blobHTTPHeaders: { blobContentType: "image/jpeg" } });
 
+        // Save to SQL Database
         const sqlConnectionString = process.env.SqlConnectionString;
         if (!sqlConnectionString) throw new Error("SQL Database Connection String is not configured.");
-
-        connection = new Connection({
-            server: sqlConnectionString.match(/Server=tcp:([^,]+)/)[1],
-            authentication: { type: 'default', options: { userName: sqlConnectionString.match(/User ID=([^;]+)/)[1], password: sqlConnectionString.match(/Password=([^;]+)/)[1] }},
-            options: { database: sqlConnectionString.match(/Initial Catalog=([^;]+)/)[1], encrypt: true }
-        });
+        connection = new Connection({ server: sqlConnectionString.match(/Server=tcp:([^,]+)/)[1], authentication: { type: 'default', options: { userName: sqlConnectionString.match(/User ID=([^;]+)/)[1], password: sqlConnectionString.match(/Password=([^;]+)/)[1] }}, options: { database: sqlConnectionString.match(/Initial Catalog=([^;]+)/)[1], encrypt: true }});
         await new Promise((resolve, reject) => connection.on('connect', err => { if (err) reject(err); else resolve(); }));
-
-        const sql = `INSERT INTO Requests (RequestId, Timestamp, FullName, Age, Phone, Province, District, Subdistrict, ApplicantRole, VehicleType, Brand, Model, Color, LicensePlate, Gate, ReasonType, ReasonOther, ConsentAgreed, IdImageFileId) 
-                     VALUES (@RequestId, @Timestamp, @FullName, @Age, @Phone, @Province, @District, @Subdistrict, @ApplicantRole, @VehicleType, @Brand, @Model, @Color, @LicensePlate, @Gate, @ReasonType, @ReasonOther, @ConsentAgreed, @IdImageFileId)`;
+        const sql = `INSERT INTO Requests (RequestId, Timestamp, FullName, Age, Phone, Province, District, Subdistrict, ApplicantRole, VehicleType, Brand, Model, Color, LicensePlate, Gate, ReasonType, ReasonOther, ConsentAgreed, IdImageFileId) VALUES (@RequestId, @Timestamp, @FullName, @Age, @Phone, @Province, @District, @Subdistrict, @ApplicantRole, @VehicleType, @Brand, @Model, @Color, @LicensePlate, @Gate, @ReasonType, @ReasonOther, @ConsentAgreed, @IdImageFileId)`;
         const request = new Request(sql, err => { if (err) reject(err); });
         request.addParameter('RequestId', TYPES.NVarChar, requestId);
         request.addParameter('Timestamp', TYPES.DateTimeOffset, now);
         request.addParameter('FullName', TYPES.NVarChar, fields.FullName);
         request.addParameter('Age', TYPES.Int, fields.Age ? parseInt(fields.Age, 10) : null);
         request.addParameter('Phone', TYPES.VarChar, fields.Phone);
+        // ... (rest of the parameters are the same)
         request.addParameter('Province', TYPES.NVarChar, fields.Province);
         request.addParameter('District', TYPES.NVarChar, fields.District);
         request.addParameter('Subdistrict', TYPES.NVarChar, fields.Subdistrict);
@@ -93,9 +105,10 @@ module.exports = async function (context, req) {
         request.addParameter('IdImageFileId', TYPES.NVarChar, blobName);
         await executeSql(connection, request);
 
+        // Respond with success
         context.res = {
             status: 200,
-            body: `Submission successful! Your Request ID is: ${requestId}. Data has been saved to the database.`
+            body: `Submission successful! Your Request ID is: ${requestId}. Data saved.`
         };
     } catch (error) {
         context.log.error("Error in function:", error);
