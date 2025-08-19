@@ -8,6 +8,8 @@
 </head>
 <body>
 
+    <canvas id="web"></canvas>
+
     <header>
         <h1>ใบคำร้องขอ RE-PRINT บัตรจอดรถ</h1>
         <p>ศูนย์การค้าอิมพีเรียลเวิลด์ สำโรง</p>
@@ -15,7 +17,7 @@
 
     <main>
         <form id="reprintForm">
-            
+
             <fieldset>
                 <legend>ข้อมูลส่วนตัวผู้ยื่นคำร้อง</legend>
                 <p>
@@ -48,7 +50,7 @@
                         <option value="">-- กรุณาเลือกตำบล --</option>
                     </select>
                 </p>
-                 <p>
+                <p>
                     <label for="applicantRole">มีฐานะเป็น:</label><br>
                     <select id="applicantRole" name="ApplicantRole" required>
                         <option value="">-- กรุณาเลือก --</option>
@@ -62,7 +64,7 @@
 
             <fieldset>
                 <legend>รายละเอียดคำร้องและยานพาหนะ</legend>
-                 <p>
+                <p>
                     <label for="gate">เข้ามาทางประตู:</label><br>
                     <select id="gate" name="Gate" required>
                         <option value="">-- กรุณาเลือก --</option>
@@ -98,7 +100,7 @@
                     <label for="color">สี:</label><br>
                     <input type="text" id="color" name="Color">
                 </p>
-                 <p>
+                <p>
                     <label for="reasonType">เนื่องจาก:</label><br>
                     <select id="reasonType" name="ReasonType" required>
                         <option value="">-- กรุณาเลือก --</option>
@@ -123,7 +125,7 @@
                     <canvas id="imageCanvas" style="max-width: 100%; height: auto; margin-top: 10px;"></canvas>
                 </div>
             </fieldset>
-            
+
             <fieldset>
                 <legend>การยินยอม</legend>
                 <p>
@@ -135,7 +137,9 @@
             <button type="submit">ส่งคำร้อง</button>
         </form>
     </main>
+
     <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+    <script src="particle-network.js"></script>
     <script src="client.js"></script>
 </body>
 </html>
