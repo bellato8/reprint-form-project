@@ -1,185 +1,117 @@
-/* --- General & Mobile-First Styling (คงไว้เหมือนเดิม) --- */
+:root {
+    --bg-1: #f8fafc;
+    --bg-2: #eef2f7;
+    --bg-3: #e2e8f0;
+    --accent: #4f7cff;
+    --accent-2: #ffd9a1;
+    --text: #0f172a;
+    --muted: #64748b;
+    --card: #ffffffcc;
+    --stroke: #e5e7eb;
+    --radius: 16px;
+}
+
+* { box-sizing: border-box }
+
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     margin: 0;
-    padding: 15px;
-    background-color: #f0f2f5;
-    color: #333;
-    line-height: 1.6;
+    color: var(--text);
+    background: radial-gradient(900px 420px at 50% 120%, var(--accent-2) 0%, transparent 45%),
+                radial-gradient(900px 480px at 85% 10%, #dbe7ff 0%, transparent 55%),
+                linear-gradient(180deg, var(--bg-2) 0%, var(--bg-1) 55%, var(--bg-3) 100%);
+    overflow-x: hidden;
 }
 
-header {
-    text-align: center;
-    margin-bottom: 20px;
-}
-
-h1 {
-    font-size: 1.6em;
-    color: #202124;
-    margin: 0;
+#web { /* Canvas for particle network */
+    position: fixed; inset: 0; z-index: 1; pointer-events: none;
 }
 
 main {
-    padding-bottom: 40px;
+    position: relative;
+    z-index: 3;
+    max-width: 860px;
+    margin: 48px auto 64px;
+    padding: 0 18px;
 }
 
+header { text-align: center; margin-bottom: 24px; }
+h1 {
+    margin: 0; font-size: clamp(24px, 4vw, 36px); letter-spacing: .2px;
+    text-shadow: 0 1px 0 #fff, 0 10px 24px #94a3b866;
+}
+p { color: var(--muted); }
+
 form {
-    max-width: 650px;
-    margin: 20px auto;
-    background-color: #ffffff;
+    background: var(--card);
+    border: 1px solid var(--stroke);
+    border-radius: var(--radius);
+    box-shadow: 0 12px 30px rgba(15, 23, 42, .08), inset 0 1px 0 rgba(255, 255, 255, .6);
+    backdrop-filter: blur(10px) saturate(130%);
     padding: 30px;
-    border-radius: 8px;
-    border: 1px solid #dadce0;
 }
 
 fieldset {
     border: none;
-    padding: 20px 0;
-    margin: 0;
-    border-bottom: 1px solid #e0e0e0;
+    padding: 0;
+    margin: 0 0 20px 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px 30px;
 }
 
-fieldset:last-of-type {
-    border-bottom: none;
-}
-
-legend {
+fieldset legend {
+    grid-column: 1 / -1;
     font-size: 1.3em;
-    font-weight: bold;
-    color: #202124;
+    font-weight: 700;
     padding-bottom: 15px;
-    width: 100%;
-}
-
-label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 600;
-    color: #5f6368;
-}
-
-input[type="text"],
-input[type="tel"],
-input[type="number"],
-textarea,
-select {
-    width: 100%;
-    padding: 12px;
     margin-bottom: 15px;
-    border-radius: 4px;
-    border: 1px solid #ccc;
-    box-sizing: border-box;
-    font-size: 1em;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    border-bottom: 1px solid var(--stroke);
+    width: 100%;
+}
+
+fieldset > p, fieldset > div {
+    margin: 0;
+}
+
+fieldset > p:has(textarea),
+fieldset > p:has(input[type="checkbox"]),
+fieldset > div {
+    grid-column: 1 / -1;
+}
+
+label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+
+input[type="text"], input[type="tel"], input[type="number"], textarea, select {
+    width: 100%;
+    padding: 12px 14px;
+    background: #ffffff;
+    color: var(--text);
+    border: 1px solid #dbe2ea;
+    border-radius: 12px;
+    outline: none;
+    transition: box-shadow .2s, border-color .2s;
 }
 
 input:focus, select:focus, textarea:focus {
-    border-color: #1a73e8;
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+    border-color: #9ab2ff;
+    box-shadow: 0 0 0 3px #bcd0ff66;
 }
 
 button[type="submit"] {
+    grid-column: 1 / -1;
     width: 100%;
-    padding: 15px;
-    background-color: #1a73e8;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 1.1em;
-    font-weight: bold;
-    transition: background-color 0.2s;
+    appearance: none; border: none; cursor: pointer;
+    padding: 14px 18px; border-radius: 12px; font-weight: 700;
+    color: #fff; background: linear-gradient(180deg, #79a6ff, #4f7cff);
+    box-shadow: 0 8px 20px rgba(79, 124, 255, .35), inset 0 1px 0 #ffffff66;
+    transition: transform .1s ease, filter .2s ease;
 }
 
-button[type="submit"]:hover {
-    background-color: #185abc;
-}
+button[type="submit"]:hover { filter: brightness(1.05); }
+button[type="submit"]:active { transform: translateY(1px); }
 
-canvas {
-    background-color: #f9f9f9;
-    border: 1px dashed #ccc;
-    border-radius: 4px;
-}
-
-/* --- NEW Luxury Grid Desktop Styling with Professional Background --- */
-@media (min-width: 992px) {
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+Thai:wght@400;700&family=Poppins:wght@300;400&display=swap');
-
-    body {
-        font-family: 'Poppins', sans-serif;
-        /* --- NEW PROFESSIONAL BACKGROUND --- */
-        background-color: #1a1a1a; /* สีพื้นหลังหลักเป็นเทาเข้มเกือบดำ */
-        background-image: 
-            radial-gradient(at 0% 0%, hsla(253, 16%, 7%, 1) 0, transparent 50%), 
-            radial-gradient(at 80% 0%, hsla(28, 100%, 74%, 0.15) 0, transparent 50%), 
-            radial-gradient(at 0% 100%, hsla(339, 49%, 30%, 0.15) 0, transparent 50%);
-        color: #e0e0e0;
-        background-attachment: fixed;
-    }
-
-    header, h1, legend, label {
-        font-family: 'Noto Serif Thai', serif;
-        color: #ffffff;
-        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-    }
-
-    form {
-        width: 90%;
-        max-width: 900px;
-        margin: 60px auto;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        background: rgba(40, 40, 40, 0.75);
-        border-radius: 15px;
-        padding: 50px;
-    }
-
-    fieldset {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 15px 30px;
-        align-items: start;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        padding-bottom: 40px;
-    }
-
-    fieldset > legend,
-    fieldset > p:has(textarea),
-    fieldset > div,
-    fieldset > p:last-of-type {
-       grid-column: 1 / -1;
-    }
-
-    input, select, textarea {
-        background: rgba(0, 0, 0, 0.3);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        color: #ffffff;
-        font-family: 'Poppins', sans-serif;
-        margin-bottom: 0;
-    }
-
-    input:focus, select:focus, textarea:focus {
-        border-color: #c0a07b;
-        box-shadow: 0 0 0 3px rgba(192, 160, 123, 0.3);
-    }
-
-    button[type="submit"] {
-        grid-column: 1 / -1;
-        background: linear-gradient(45deg, #c0a07b, #d4af8c);
-        color: #121212;
-        font-family: 'Noto Serif Thai', serif;
-        font-weight: 700;
-        letter-spacing: 1px;
-        border-radius: 8px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        margin-top: 20px;
-    }
-
-    button[type="submit"]:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
-    }
+canvas#imageCanvas {
+    border: 1px dashed #c8d2e1; border-radius: 16px;
+    background: linear-gradient(180deg,#ffffff,#f5f7fb);
 }
