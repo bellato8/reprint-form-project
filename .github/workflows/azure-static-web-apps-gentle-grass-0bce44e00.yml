@@ -31,6 +31,7 @@ jobs:
           app_location: "/" # App source code path
           api_location: "api" # API source code path
           output_location: "" # Built app content directory - optional
+          skip_app_build: "true"
           ###### End of Repository/Build Configurations ######
 
   close_pull_request_job:
@@ -44,3 +45,4 @@ jobs:
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_GENTLE_GRASS_0BCE44E00 }}
           action: "close"
+
