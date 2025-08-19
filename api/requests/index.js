@@ -3,23 +3,26 @@ const formidable = require("formidable");
 const sharp = require("sharp");
 const fs = require("fs");
 
-// Helper function to parse form with Formidable
+// Helper function to parse form with Formidable using the correct instantiation
 const parseForm = (req) => {
     return new Promise((resolve, reject) => {
-        // THE FIX IS HERE: We instantiate the form object differently
-        const form = formidable({ 
-            // Options can be added here if needed, e.g., maxFileSize
-        });
+        // THE FIX IS HERE: Use the classic and more compatible instantiation method
+        const form = new formidable.IncomingForm();
 
         form.parse(req, (err, fields, files) => {
             if (err) {
                 reject(err);
                 return;
             }
-            // Formidable v3 wraps fields in arrays, so we need to unwrap them
+
+            // Formidable v2/v3 compatibility: fields might be arrays
             const unwrappedFields = {};
             for (const key in fields) {
-                unwrappedFields[key] = fields[key][0];
+                if (Array.isArray(fields[key])) {
+                    unwrappedFields[key] = fields[key][0];
+                } else {
+                    unwrappedFields[key] = fields[key];
+                }
             }
             resolve({ fields: unwrappedFields, files });
         });
@@ -27,12 +30,12 @@ const parseForm = (req) => {
 };
 
 module.exports = async function (context, req) {
-    context.log('Processing a new reprint request with Formidable parser v2.');
+    context.log('Processing a new reprint request with Formidable parser v3.');
 
     try {
         const { fields, files } = await parseForm(req);
 
-        const imageFile = files.file ? files.file[0] : null;
+        const imageFile = files.file ? (Array.isArray(files.file) ? files.file[0] : files.file) : null;
         if (!imageFile) {
             throw new Error("Image file not found in form data.");
         }
