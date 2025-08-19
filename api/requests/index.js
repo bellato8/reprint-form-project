@@ -1,9 +1,8 @@
 // File: api/requests/index.js
-// Final version using Jimp for image processing.
+// Diagnostic version: No image processing to test deployment.
 
 const { BlobServiceClient } = require("@azure/storage-blob");
 const formidable = require("formidable");
-const Jimp = require("jimp");
 const fs = require("fs");
 const { Connection, Request, TYPES } = require("tedious");
 
@@ -31,14 +30,15 @@ const executeSql = (connection, request) => {
 };
 
 module.exports = async function (context, req) {
-    context.log('Processing a new reprint request with Jimp processor.');
+    context.log('Processing request without image watermarking.');
     let connection;
     try {
         const { fields, files } = await parseForm(req);
         const imageFile = files.file ? (Array.isArray(files.file) ? files.file[0] : files.file) : null;
         if (!imageFile) throw new Error("Image file not found in form data.");
 
-        const imageBuffer = fs.readFileSync(imageFile.filepath);
+        // We will use the original, un-watermarked image buffer directly
+        const originalImageBuffer = fs.readFileSync(imageFile.filepath);
 
         // Generate Request ID
         const now = new Date();
@@ -48,33 +48,20 @@ module.exports = async function (context, req) {
         const timestamp = Date.now().toString().slice(-4);
         const requestId = `R${year}${month}${day}-${timestamp}`;
 
-        // Watermark the image using Jimp
-        const image = await Jimp.read(imageBuffer);
-        const font = await Jimp.loadFont(Jimp.FONT_SANS_32_BLACK); // Using a built-in font
+        // --- WATERMARKING SECTION IS REMOVED FOR THIS TEST ---
 
-        const timeString = now.toTimeString().split(' ')[0].substring(0, 5);
-        const dateString = `${day}/${month}/${year}`;
-        const watermarkText = `ใช้สำหรับ RE-PRINT บัตรจอดรถเท่านั้น\nที่ศูนย์การค้าอิมพีเรียลเวิลด์ สำโรง\nวันที่ ${dateString} เวลา ${timeString} น.`;
-
-        const textOptions = {
-            text: watermarkText,
-            alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
-            alignmentY: Jimp.VERTICAL_ALIGN_MIDDLE
-        };
-
-        image.print(font, 0, 0, textOptions, image.bitmap.width, image.bitmap.height);
-        image.rotate(-20); // Rotate after printing for better effect
-
-        const watermarkedImageBuffer = await image.getBufferAsync(Jimp.MIME_JPEG);
-
-        // Upload to Azure Blob Storage
+        // Upload original image to Azure Blob Storage
         const storageConnectionString = process.env.ReprintStorageConnectionString;
         if (!storageConnectionString) throw new Error("Azure Storage Connection String is not configured.");
         const blobServiceClient = BlobServiceClient.fromConnectionString(storageConnectionString);
         const containerClient = blobServiceClient.getContainerClient("re-print-ids");
         const blobName = `${now.getFullYear()}/${month}/${day}/${requestId}.jpg`;
         const blockBlobClient = containerClient.getBlockBlobClient(blobName);
-        await blockBlobClient.upload(watermarkedImageBuffer, watermarkedImageBuffer.length, { blobHTTPHeaders: { blobContentType: "image/jpeg" } });
+
+        // Uploading the original buffer
+        await blockBlobClient.upload(originalImageBuffer, originalImageBuffer.length, {
+            blobHTTPHeaders: { blobContentType: imageFile.mimetype }
+        });
 
         // Save to SQL Database
         const sqlConnectionString = process.env.SqlConnectionString;
@@ -88,7 +75,6 @@ module.exports = async function (context, req) {
         request.addParameter('FullName', TYPES.NVarChar, fields.FullName);
         request.addParameter('Age', TYPES.Int, fields.Age ? parseInt(fields.Age, 10) : null);
         request.addParameter('Phone', TYPES.VarChar, fields.Phone);
-        // ... (rest of the parameters are the same)
         request.addParameter('Province', TYPES.NVarChar, fields.Province);
         request.addParameter('District', TYPES.NVarChar, fields.District);
         request.addParameter('Subdistrict', TYPES.NVarChar, fields.Subdistrict);
@@ -108,7 +94,7 @@ module.exports = async function (context, req) {
         // Respond with success
         context.res = {
             status: 200,
-            body: `Submission successful! Your Request ID is: ${requestId}. Data saved.`
+            body: `(TEST) Submission successful! Your Request ID is: ${requestId}. Original image saved.`
         };
     } catch (error) {
         context.log.error("Error in function:", error);
