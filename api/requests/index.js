@@ -37,7 +37,6 @@ module.exports = async function (context, req) {
 
         const imageBuffer = fs.readFileSync(imageFile.filepath);
 
-        // --- Generate Request ID ---
         const now = new Date();
         const year = now.getFullYear() + 543;
         const month = (now.getMonth() + 1).toString().padStart(2, '0');
@@ -45,7 +44,6 @@ module.exports = async function (context, req) {
         const timestamp = Date.now().toString().slice(-4);
         const requestId = `R${year}${month}${day}-${timestamp}`;
 
-        // --- Watermark Image ---
         const timeString = now.toTimeString().split(' ')[0].substring(0, 5);
         const dateString = `${day}/${month}/${year}`;
         const watermarkText = `ใช้สำหรับ RE-PRINT บัตรจอดรถเท่านั้น\nที่ศูนย์การค้าอิมพีเรียลเวิลด์ สำโรง\nวันที่ ${dateString} เวลา ${timeString} น.`;
@@ -53,7 +51,6 @@ module.exports = async function (context, req) {
         const textSvg = Buffer.from(`<svg width="${imageMetadata.width}" height="${imageMetadata.height}"><style>.title { fill: rgba(255, 0, 0, 0.4); font-size: ${Math.max(20, imageMetadata.width / 20)}px; font-weight: bold; font-family: Arial, sans-serif; text-anchor: middle; }</style><text x="50%" y="50%" class="title" transform="rotate(-20 ${imageMetadata.width / 2},${imageMetadata.height / 2})">${watermarkText.split('\n').map((line, i) => `<tspan x="50%" dy="${i === 0 ? 0 : '1.2em'}">${line}</tspan>`).join('')}</text></svg>`);
         const watermarkedImageBuffer = await sharp(imageBuffer).composite([{ input: textSvg, tile: false }]).jpeg({ quality: 85 }).toBuffer();
 
-        // --- Upload to Azure Blob Storage ---
         const storageConnectionString = process.env.ReprintStorageConnectionString;
         if (!storageConnectionString) throw new Error("Azure Storage Connection String is not configured.");
         const blobServiceClient = BlobServiceClient.fromConnectionString(storageConnectionString);
@@ -62,7 +59,6 @@ module.exports = async function (context, req) {
         const blockBlobClient = containerClient.getBlockBlobClient(blobName);
         await blockBlobClient.upload(watermarkedImageBuffer, watermarkedImageBuffer.length, { blobHTTPHeaders: { blobContentType: "image/jpeg" } });
 
-        // --- Save to SQL Database ---
         const sqlConnectionString = process.env.SqlConnectionString;
         if (!sqlConnectionString) throw new Error("SQL Database Connection String is not configured.");
 
@@ -71,17 +67,15 @@ module.exports = async function (context, req) {
             authentication: { type: 'default', options: { userName: sqlConnectionString.match(/User ID=([^;]+)/)[1], password: sqlConnectionString.match(/Password=([^;]+)/)[1] }},
             options: { database: sqlConnectionString.match(/Initial Catalog=([^;]+)/)[1], encrypt: true }
         });
-
-        await new Promise(resolve => connection.on('connect', err => { if (err) throw err; resolve(); }));
+        await new Promise((resolve, reject) => connection.on('connect', err => { if (err) reject(err); else resolve(); }));
 
         const sql = `INSERT INTO Requests (RequestId, Timestamp, FullName, Age, Phone, Province, District, Subdistrict, ApplicantRole, VehicleType, Brand, Model, Color, LicensePlate, Gate, ReasonType, ReasonOther, ConsentAgreed, IdImageFileId) 
                      VALUES (@RequestId, @Timestamp, @FullName, @Age, @Phone, @Province, @District, @Subdistrict, @ApplicantRole, @VehicleType, @Brand, @Model, @Color, @LicensePlate, @Gate, @ReasonType, @ReasonOther, @ConsentAgreed, @IdImageFileId)`;
-
-        const request = new Request(sql, err => { if (err) throw err; });
+        const request = new Request(sql, err => { if (err) reject(err); });
         request.addParameter('RequestId', TYPES.NVarChar, requestId);
         request.addParameter('Timestamp', TYPES.DateTimeOffset, now);
         request.addParameter('FullName', TYPES.NVarChar, fields.FullName);
-        request.addParameter('Age', TYPES.Int, fields.Age ? parseInt(fields.Age) : null);
+        request.addParameter('Age', TYPES.Int, fields.Age ? parseInt(fields.Age, 10) : null);
         request.addParameter('Phone', TYPES.VarChar, fields.Phone);
         request.addParameter('Province', TYPES.NVarChar, fields.Province);
         request.addParameter('District', TYPES.NVarChar, fields.District);
@@ -97,20 +91,17 @@ module.exports = async function (context, req) {
         request.addParameter('ReasonOther', TYPES.NVarChar, fields.ReasonOther);
         request.addParameter('ConsentAgreed', TYPES.Bit, fields.ConsentAgreed === 'on');
         request.addParameter('IdImageFileId', TYPES.NVarChar, blobName);
-
         await executeSql(connection, request);
 
-        // --- Respond with success ---
         context.res = {
             status: 200,
             body: `Submission successful! Your Request ID is: ${requestId}. Data has been saved to the database.`
         };
-
     } catch (error) {
         context.log.error("Error in function:", error);
         context.res = { status: 500, body: "An error occurred: " + error.message };
     } finally {
-        if (connection && connection.closed) {
+        if (connection && connection.connected) {
             connection.close();
         }
     }
