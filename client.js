@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.getElementById('imageCanvas');
     const ctx = canvas.getContext('2d');
     const submitButton = form.querySelector('button[type="submit"]');
-    let processedFile = null; // Variable to store the processed (converted) file
+    let processedFile = null;
 
     // --- Cascading Dropdowns (Placeholder) ---
     const locationData = { "สมุทรปราการ": { "เมืองสมุทรปราการ": ["ปากน้ำ", "สำโรงเหนือ"], "พระประแดง": ["ตลาด", "บางพึ่ง"] }, "กรุงเทพมหานคร": { "เขตพระนคร": ["พระบรมมหาราชวัง"], "เขตบางนา": ["บางนาเหนือ", "บางนาใต้"] } };
@@ -26,10 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Image Preview & Watermark with HEIC Conversion ---
     fileInput.addEventListener('change', async (event) => {
         let file = event.target.files[0];
-        if (!file) {
-            processedFile = null;
-            return;
-        }
+        if (!file) { processedFile = null; return; }
         submitButton.disabled = true;
         submitButton.textContent = 'กำลังประมวลผลรูป...';
         try {
@@ -70,8 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             reader.readAsDataURL(processedFile);
         } catch (error) {
-            console.error("Error processing image:", error);
-            alert("เกิดข้อผิดพลาดในการประมวลผลรูปภาพ โปรดลองอีกครั้ง");
+            alert("เกิดข้อผิดพลาดในการประมวลผลรูปภาพ");
             processedFile = null;
         } finally {
             submitButton.disabled = false;
@@ -79,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- Form Submission (Simplified and More Robust Method) ---
+    // --- Form Submission (NEW METHOD: JSON + Base64) ---
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
         if (!processedFile) {
@@ -89,31 +85,53 @@ document.addEventListener('DOMContentLoaded', () => {
         submitButton.disabled = true;
         submitButton.textContent = 'กำลังส่ง...';
 
-        // ใช้วิธีมาตรฐานในการสร้าง FormData แล้วค่อยแทนที่ไฟล์
-        const formData = new FormData(form);
-        formData.set('file', processedFile, processedFile.name);
+        // Convert file to Base64
+        const reader = new FileReader();
+        reader.readAsDataURL(processedFile);
+        reader.onload = async () => {
+            const base64Image = reader.result;
 
-        try {
-            const response = await fetch('/api/requests', {
-                method: 'POST',
-                body: formData,
+            const formDataObject = {};
+            new FormData(form).forEach((value, key) => {
+                if (key !== 'file') { // Exclude the file input from form data
+                    formDataObject[key] = value;
+                }
             });
-            const responseText = await response.text();
-            if (response.ok) {
-                alert('ส่งข้อมูลสำเร็จ! ข้อความตอบกลับ:\n\n' + responseText);
-                form.reset();
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                processedFile = null;
-                fileInput.value = ''; // Clear file input
-            } else {
-                throw new Error('Server error: ' + responseText);
+
+            // Combine form data and base64 image into a single JSON object
+            const payload = {
+                ...formDataObject,
+                imageData: base64Image,
+                imageFileName: processedFile.name
+            };
+
+            try {
+                const response = await fetch('/api/requests', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                const responseText = await response.text();
+                if (response.ok) {
+                    alert('ส่งข้อมูลสำเร็จ! ข้อความตอบกลับ:\n\n' + responseText);
+                    form.reset();
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    processedFile = null;
+                    fileInput.value = '';
+                } else {
+                    throw new Error('Server error: ' + responseText);
+                }
+            } catch (error) {
+                alert('เกิดข้อผิดพลาดในการส่งข้อมูล: ' + error.message);
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'ส่งคำร้อง';
             }
-        } catch (error) {
-            console.error('Error submitting form:', error);
-            alert('เกิดข้อผิดพลาดในการส่งข้อมูล: ' + error.message);
-        } finally {
+        };
+        reader.onerror = (error) => {
+            alert('เกิดข้อผิดพลาดในการอ่านไฟล์รูปภาพ');
             submitButton.disabled = false;
             submitButton.textContent = 'ส่งคำร้อง';
-        }
+        };
     });
 });
