@@ -1,14 +1,13 @@
 document.addEventListener('DOMContentLoaded', () => {
-
     const form = document.getElementById('reprintForm');
     const fileInput = document.getElementById('idCardImage');
     const canvas = document.getElementById('imageCanvas');
     const ctx = canvas.getContext('2d');
     const submitButton = form.querySelector('button[type="submit"]');
+    let processedFile = null; // Variable to store the processed (converted) file
 
     // --- Cascading Dropdowns (Placeholder) ---
-    // This part remains the same
-    const locationData = { "สมุทรปราการ": { "เมืองสมุทรปราการ": ["ปากน้ำ", "สำโรงเหนือ"], "พระประแดง": ["ตลาด", "บางพึ่ง"] },"กรุงเทพมหานคร": { "เขตพระนคร": ["พระบรมมหาราชวัง"], "เขตบางนา": ["บางนาเหนือ", "บางนาใต้"] }};
+    const locationData = { "สมุทรปราการ": { "เมืองสมุทรปราการ": ["ปากน้ำ", "สำโรงเหนือ"], "พระประแดง": ["ตลาด", "บางพึ่ง"] }, "กรุงเทพมหานคร": { "เขตพระนคร": ["พระบรมมหาราชวัง"], "เขตบางนา": ["บางนาเหนือ", "บางนาใต้"] } };
     const provinceSelect = document.getElementById('province');
     const districtSelect = document.getElementById('district');
     const subdistrictSelect = document.getElementById('subdistrict');
@@ -27,19 +26,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Image Preview & Watermark with HEIC Conversion ---
     fileInput.addEventListener('change', async (event) => {
         let file = event.target.files[0];
-        if (!file) return;
-
+        if (!file) {
+            processedFile = null;
+            return;
+        }
         submitButton.disabled = true;
         submitButton.textContent = 'กำลังประมวลผลรูป...';
-
         try {
-            // Check if the file is HEIC/HEIF and convert it
             const fileName = file.name.toLowerCase();
             if (fileName.endsWith('.heic') || fileName.endsWith('.heif')) {
                 const convertedBlob = await heic2any({ blob: file, toType: "image/jpeg" });
-                file = new File([convertedBlob], "converted.jpeg", { type: "image/jpeg" });
+                processedFile = new File([convertedBlob], "converted.jpeg", { type: "image/jpeg" });
+            } else {
+                processedFile = file;
             }
-
             const reader = new FileReader();
             reader.onload = (e) => {
                 const img = new Image();
@@ -49,31 +49,34 @@ document.addEventListener('DOMContentLoaded', () => {
                     canvas.width = maxWidth;
                     canvas.height = img.height * scale;
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
                     const today = new Date();
+                    const timeString = today.toTimeString().split(' ')[0].substring(0, 5); // HH:MM
                     const dateString = `${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear() + 543}`;
-                    const watermarkText1 = "ใช้สำหรับ RE-PRINT บัตรจอดรถ";
-                    const watermarkText2 = `ที่ศูนย์การค้าอิมพีเรียลเวิลด์ สำโรง เท่านั้น`;
-                    const watermarkText3 = `วันที่ ${dateString}`;
+                    const watermarkText = `ใช้สำหรับ RE-PRINT บัตรจอดรถเท่านั้น\nที่ศูนย์การค้าอิมพีเรียลเวิลด์ สำโรง\nวันที่ ${dateString} เวลา ${timeString} น.`;
 
-                    ctx.font = `bold ${canvas.width / 22}px Arial`;
+                    ctx.font = `bold ${canvas.width / 25}px Arial`;
                     ctx.fillStyle = 'rgba(255, 0, 0, 0.4)';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.translate(canvas.width / 2, canvas.height / 2);
                     ctx.rotate(-20 * Math.PI / 180);
-                    ctx.fillText(watermarkText1, 0, -30);
-                    ctx.fillText(watermarkText2, 0, 0);
-                    ctx.fillText(watermarkText3, 0, 30);
+
+                    // Draw text line by line
+                    const lines = watermarkText.split('\n');
+                    const lineHeight = canvas.width / 20;
+                    lines.forEach((line, index) => {
+                        ctx.fillText(line, 0, (index * lineHeight) - (lineHeight * (lines.length -1) / 2));
+                    });
+
                     ctx.setTransform(1, 0, 0, 1, 0, 0);
                 };
                 img.src = e.target.result;
             };
-            reader.readAsDataURL(file);
-
+            reader.readAsDataURL(processedFile);
         } catch (error) {
             console.error("Error processing image:", error);
             alert("เกิดข้อผิดพลาดในการประมวลผลรูปภาพ โปรดลองอีกครั้ง");
+            processedFile = null;
         } finally {
             submitButton.disabled = false;
             submitButton.textContent = 'ส่งคำร้อง';
@@ -83,10 +86,24 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Form Submission ---
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
+        if (!processedFile) {
+            alert('กรุณาอัปโหลดรูปภาพก่อนครับ');
+            return;
+        }
         submitButton.disabled = true;
         submitButton.textContent = 'กำลังส่ง...';
 
-        const formData = new FormData(form);
+        // Create FormData manually to ensure the processed file is sent
+        const formData = new FormData();
+        for (const key in form.elements) {
+            if (form.elements.hasOwnProperty(key)) {
+                const element = form.elements[key];
+                if (element.name && element.type !== 'file') {
+                    formData.append(element.name, element.value);
+                }
+            }
+        }
+        formData.append('file', processedFile, processedFile.name);
 
         try {
             const response = await fetch('/api/requests', {
@@ -98,6 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('ส่งข้อมูลสำเร็จ! ข้อความตอบกลับ:\n\n' + responseText);
                 form.reset();
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
+                processedFile = null;
             } else {
                 throw new Error('Server error: ' + responseText);
             }
